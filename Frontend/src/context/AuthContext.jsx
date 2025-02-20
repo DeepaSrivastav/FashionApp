@@ -1,0 +1,68 @@
+import { createUserWithEmailAndPassword, GoogleAuthProvider, onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, signOut } from "firebase/auth";
+import { useContext, useEffect, useState } from "react";
+import { createContext } from "react";
+import { auth } from "../firebase/firebase.config";
+
+const AuthContext = createContext();
+//createContext() is a function that creates an object which stores the data you want to share across components. Here AuthContext is that object
+
+export const useAuth = () => {
+    return useContext(AuthContext)
+}
+
+const googleProvider = new GoogleAuthProvider();
+
+//authProvider
+export const AuthProvide = ({children}) => {
+
+    const [currentUser, setCurrentUser] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    const registerUser = async (email, password) => {
+    return await createUserWithEmailAndPassword(auth, email, password)
+    }
+
+    const loginUser = async (email, password) => {
+        return await signInWithEmailAndPassword(auth, email, password)
+    }
+
+    const signInWithGoogle = async () => {
+        return await signInWithPopup(auth, googleProvider)
+    }
+
+    const logout = () => {
+        return signOut(auth)
+    }
+
+    useEffect(() => {
+        const unsubscribe =  onAuthStateChanged(auth, (user) => {
+            setCurrentUser(user);
+            setLoading(false);
+
+            if(user) {
+               
+                const {email, displayName, photoURL} = user;
+                const userData = {
+                    email, username: displayName, photo: photoURL
+                } 
+            }
+        })
+
+        return () => unsubscribe();
+    }, [])
+
+    const value={
+        currentUser,
+        loading,
+        registerUser,
+        loginUser,
+        signInWithGoogle,
+        logout
+    }
+
+    return (
+        <AuthContext.Provider value={value}>
+            {children}
+        </AuthContext.Provider>
+    )
+}
